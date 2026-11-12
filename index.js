@@ -1,5 +1,12 @@
-import http from "./http.js";
+import express from "./express.js";
 
-console.log("Starting...");
+const app = express();
 
-http.listen("localhost", 3000);
+app.get('/', (req, res) => {
+  res.send('Hello World!');
+});
+
+let port = 3000;
+let host = "localhost";
+
+app.listen(port, host, () => console.log(`Express server is listening on http://${host}:${port}`));

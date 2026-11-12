@@ -1,14 +1,14 @@
 import tcp from "./tcp.js";
 
-function listen(host, port) {
-    let tcpServer = tcp.server;
+class Server {
+  constructor() {
+    this.tcpServer = new tcp.Server();
+  }
 
-    // Запускаем сервер
-    tcpServer.listen(port, host, () => {
-        console.log(`TCP-сервер запущен на ${host}:${port}\r\n`);
-    });
-
-    console.log("Done.");
+  async listen(port, host, ready) {
+    console.log("Starting HTTP server...");
+    await this.tcpServer.listen(port, host, ready);
+  }
 }
 
-export default { listen };
+export default { Server };
