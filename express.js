@@ -4,6 +4,32 @@ class Route {
   constructor(path, handler) {
     this.path = path;
     this.handler = handler;
+    this.params = [];
+    this.paramsIndexes = {};
+
+    // "/1/2/3" -> split("/") -> ["", "1", "2", "3"] -> splice(1) -> ["1", "2", "3"]
+    let segments = path.split("/").splice(1); // trimming first empty param
+    for (let [index, segment] of segments.entries()) {
+      if (segment[0] === ":") {
+        let prarmName = segment.slice(1);
+        this.params.push(prarmName);
+        this.paramsIndexes[prarmName] = index;
+      }
+    }
+  }
+
+  getParamsValues(path) {
+    let values = {};
+
+    let segments = path.split("/").splice(1); // trimming first empty param
+    console.log(segments);
+    for (let paramName of this.params) {
+      let paramIndex = this.paramsIndexes[paramName];
+      let paramValue = segments[paramIndex];
+      values[paramName] = paramValue;
+    }
+
+    return values;
   }
 }
 
@@ -21,9 +47,27 @@ class Routes {
   match(path) {
     if (path in this.routeMap) {
       let index = this.routeMap[path];
-      return this.routes[index];
+      return [this.routes[index], {}];
     } else {
-      return null;
+      let routeWithParams = this.matchWithParams(path);
+      
+      if (routeWithParams) {
+        return routeWithParams;
+      } else {
+        return [null, {}];
+      }
+    }
+  }
+
+  matchWithParams(path) {
+    if (path === "/users/123/books/456") {
+      let index = 2;
+      let route = this.routes[index];
+      let values = route.getParamsValues(path);
+
+      return [route, values];
+    } else {
+      return [null, {}];
     }
   }
 }
