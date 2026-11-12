@@ -5,17 +5,27 @@ class Route {
     this.path = path;
     this.handler = handler;
     this.params = [];
-    this.paramsIndexes = {};
+    this.indexToParamMap = {};
+    this.paramToIndexMap = {};
+    
+    let paramsWildcardSegments = []; // "/param/:paramName/anotherParam/:anotherParamName" -> ["param", "*", "anotherParam", "*"]
 
     // "/1/2/3" -> split("/") -> ["", "1", "2", "3"] -> splice(1) -> ["1", "2", "3"]
     let pathSegments = path.split("/").splice(1); // trimming first empty param
     for (let [index, segment] of pathSegments.entries()) {
       if (segment[0] === ":") {
-        let prarmName = segment.slice(1);
-        this.params.push(prarmName);
-        this.paramsIndexes[prarmName] = index;
+        let paramName = segment.slice(1);
+        this.params.push(paramName);
+        this.indexToParamMap[index] = paramName;
+        this.paramToIndexMap[paramName] = index;
+        
+        paramsWildcardSegments.push("*");
+      } else {
+        paramsWildcardSegments.push(segment);
       }
     }
+
+    this.paramsWildcard = paramsWildcardSegments.join("/"); // ["param", "*", "anotherParam", "*"] -> "param/*/anotherParam/*"
   }
 
   getParamsValues(path) {
@@ -25,7 +35,7 @@ class Route {
     let pathSegments = path.split("/").splice(1); // trimming first empty param
     console.log(pathSegments);
     for (let paramName of this.params) {
-      let paramIndex = this.paramsIndexes[paramName];
+      let paramIndex = this.paramToIndexMap[paramName];
       let paramValue = pathSegments[paramIndex];
       values[paramName] = paramValue;
     }
@@ -42,9 +52,10 @@ class Routes {
 
   add(path, handler) {
     let index = this.routes.push(new Route(path, handler));
-    this.routeMap[path] = index - 1;
+    this.routeMap[path] = index - 1; // Array length after adding - 1
   }
 
+  // Generic matching: simple equality checking first, then possible paramatric matches
   match(path) {
     let simpleRoute = this.simpleMatch(path);
     if (simpleRoute !== null) {
@@ -66,7 +77,11 @@ class Routes {
   matchWithParams(path) {
     // "/1/2/3" -> split("/") -> ["", "1", "2", "3"] -> splice(1) -> ["1", "2", "3"]
     let pathSegments = path.split("/").splice(1); // trimming first empty param
-    console.log(pathSegments);
+    let urlWildcard = "";
+
+    for (let [segmentIndex, pathSegment] of pathSegments.entries()) {
+      // if 
+    }
 
     if (path === "/users/123/books/456") {
       let index = 2;

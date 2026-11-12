@@ -14,8 +14,10 @@ app.get('/users/:userId/books/:bookId', (req, res) => {
   res.send(req.params);
 });
 
+// All routes
 console.log("All routes:", app.routes);
 
+// Test matching
 console.log("routes.match(`\"/\"):", app.routes.match("/"));
 console.log("routes.match(`\"/hello\"):", app.routes.match("/hello"));
 console.log("routes.match(`\"/non-existent-url\"):", app.routes.match("/non-existent-url"));
