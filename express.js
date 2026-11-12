@@ -8,8 +8,8 @@ class Route {
     this.paramsIndexes = {};
 
     // "/1/2/3" -> split("/") -> ["", "1", "2", "3"] -> splice(1) -> ["1", "2", "3"]
-    let segments = path.split("/").splice(1); // trimming first empty param
-    for (let [index, segment] of segments.entries()) {
+    let pathSegments = path.split("/").splice(1); // trimming first empty param
+    for (let [index, segment] of pathSegments.entries()) {
       if (segment[0] === ":") {
         let prarmName = segment.slice(1);
         this.params.push(prarmName);
@@ -21,11 +21,12 @@ class Route {
   getParamsValues(path) {
     let values = {};
 
-    let segments = path.split("/").splice(1); // trimming first empty param
-    console.log(segments);
+    // "/1/2/3" -> split("/") -> ["", "1", "2", "3"] -> splice(1) -> ["1", "2", "3"]
+    let pathSegments = path.split("/").splice(1); // trimming first empty param
+    console.log(pathSegments);
     for (let paramName of this.params) {
       let paramIndex = this.paramsIndexes[paramName];
-      let paramValue = segments[paramIndex];
+      let paramValue = pathSegments[paramIndex];
       values[paramName] = paramValue;
     }
 
@@ -45,21 +46,28 @@ class Routes {
   }
 
   match(path) {
+    let simpleRoute = this.simpleMatch(path);
+    if (simpleRoute !== null) {
+      return [simpleRoute, {}];
+    } else {
+      return this.matchWithParams(path);
+    }
+  }
+
+  simpleMatch(path) {
     if (path in this.routeMap) {
       let index = this.routeMap[path];
-      return [this.routes[index], {}];
+      return this.routes[index];
     } else {
-      let routeWithParams = this.matchWithParams(path);
-      
-      if (routeWithParams) {
-        return routeWithParams;
-      } else {
-        return [null, {}];
-      }
+      return null;
     }
   }
 
   matchWithParams(path) {
+    // "/1/2/3" -> split("/") -> ["", "1", "2", "3"] -> splice(1) -> ["1", "2", "3"]
+    let pathSegments = path.split("/").splice(1); // trimming first empty param
+    console.log(pathSegments);
+
     if (path === "/users/123/books/456") {
       let index = 2;
       let route = this.routes[index];
