@@ -53,37 +53,14 @@ class Route {
 class Routes {
   constructor() {
     this.routes = [];
-    this.routeMap = {};
   }
 
   add(path, handler) {
     let route = new Route(path, handler);
     let index = this.routes.push(route);
-
-    let routeWildcard = route._pathWildcard;
-    this.routeMap[routeWildcard] = index - 1; // Array length after adding - 1
   }
 
-  // Generic matching: simple equality checking first, then possible paramatric matches
   match(path) {
-    let simpleRouteMatch = this.simpleMatch(path);
-    if (simpleRouteMatch !== null) {
-      return [simpleRouteMatch, {}];
-    } else {
-      return this.matchWithParams(path);
-    }
-  }
-
-  simpleMatch(path) {
-    if (path in this.routeMap) {
-      let index = this.routeMap[path];
-      return this.routes[index];
-    } else {
-      return null;
-    }
-  }
-
-  matchWithParams(path) {
     const pathSegments = path.split("/").splice(1); // trimming first empty param
 
     let params = {};
@@ -122,8 +99,13 @@ class Routes {
 
 class ExpressApp {
   constructor() {
-    this.httpServer = new http.Server();
+    this.httpServer = new http.Server(this._httpDataHandler.bind(this)); // Context binding needed or arrow function
     this.routes = new Routes();
+  }
+
+  _httpDataHandler(httpData) {
+    console.log(">>> express request:", httpData);
+    return "<<< express response: " + httpData;
   }
 
   async listen(port, host = "localhost", ready) {

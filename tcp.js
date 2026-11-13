@@ -15,11 +15,11 @@ class Server {
         console.log("=========================================\r\n");
 
         // Calling dataHandler
-        let [code, status, headers, body] = dataHandler(data.toString().trim());
+        let [code, status, headers, body] = this._dataHandler(data.toString().trim());
 
         let res = `HTTP/1.0 ${code} ${status}\r\n`;
         for (let header of headers) {
-          res + `${header[0]}: ${header[1]}\r\n`;
+          res += `${header[0]}: ${header[1]}\r\n`;
         }
         res += `\r\n${body}\r\n`;
 
@@ -39,7 +39,7 @@ class Server {
       });
 
       // Обработка ошибок
-      socket.on('err', (err) => {
+      socket.on('error', (err) => {
         console.error(`Socket error: ${err.message}`);
       });
     });

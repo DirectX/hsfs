@@ -1,11 +1,16 @@
 import tcp from "./tcp.js";
 
 class Server {
-  constructor() {
-    this.tcpServer = new tcp.Server(this._tcpDataHandler);
+  constructor(dataHandler) {
+    this._dataHandler = dataHandler;
+    this.tcpServer = new tcp.Server(this._tcpDataHandler.bind(this)); // Context binding needed or arrow function
   }
 
-  _tcpDataHandler() {
+  _tcpDataHandler(tcpData) {
+    console.log(`TCP dataHandler: ${tcpData}\r\n`);
+
+    console.log(this._dataHandler("from handler"));
+
     return [200, "OK", [["Content-type", "application/json"]], "{ \"ok\": true }"];
   }
 
