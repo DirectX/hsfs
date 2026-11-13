@@ -1,41 +1,47 @@
 import http from "./http.js";
 
 class Route {
-  constructor(path, handler) {
-    this.path = path;
-    this.handler = handler;
-    this.params = [];
-    this.indexToParamMap = {};
-    this.paramToIndexMap = {};
-    
-    let paramsWildcardSegments = []; // "/param/:paramName/anotherParam/:anotherParamName" -> ["param", "*", "anotherParam", "*"]
+  constructor(method, path, handler) {
+    this._method = method;
+    this._path = path;
+    this._handler = handler;
+    this._params = [];
+    this._indexToParamMap = {};
+    this._paramToIndexMap = {};
+    this._pathWildcardSegments = [];
 
-    // "/1/2/3" -> split("/") -> ["", "1", "2", "3"] -> splice(1) -> ["1", "2", "3"]
+    // "/user/:userId/book/:bookId" -> ["user", "*", "book", "*"]
+    // "/user/123/book/456" -> split("/") -> ["", "user", "123", "book", "456"]
+    // ["", "user", "123", "book", "456"] -> splice(1) -> ["user", "123", "book", "456"]
     let pathSegments = path.split("/").splice(1); // trimming first empty param
     for (let [index, segment] of pathSegments.entries()) {
       if (segment[0] === ":") {
-        let paramName = segment.slice(1);
-        this.params.push(paramName);
-        this.indexToParamMap[index] = paramName;
-        this.paramToIndexMap[paramName] = index;
-        
-        paramsWildcardSegments.push("*");
+        let paramName = segment.slice(1); // ":userId" -> "userId"
+        this._params.push(paramName); // [] -> ["userId"]
+        this._indexToParamMap[index] = paramName; // { 1: "userId" }
+        this._paramToIndexMap[paramName] = index; // { "userId": 1 }
+        this._pathWildcardSegments.push("*");
       } else {
-        paramsWildcardSegments.push(segment);
+        this._pathWildcardSegments.push(segment);
       }
     }
+    // self._pathWildcardSegments = ["user", "*", "book", "*"]
+  }
 
-    this.paramsWildcard = paramsWildcardSegments.join("/"); // ["param", "*", "anotherParam", "*"] -> "param/*/anotherParam/*"
+  getPathWildcardSegments() {
+    return this._pathWildcardSegments;
+  }
+
+  getParamName(index) {
+    return this._indexToParamMap[index];
   }
 
   getParamsValues(path) {
     let values = {};
 
-    // "/1/2/3" -> split("/") -> ["", "1", "2", "3"] -> splice(1) -> ["1", "2", "3"]
     let pathSegments = path.split("/").splice(1); // trimming first empty param
-    console.log(pathSegments);
-    for (let paramName of this.params) {
-      let paramIndex = this.paramToIndexMap[paramName];
+    for (let paramName of this._params) {
+      let paramIndex = this._paramToIndexMap[paramName];
       let paramValue = pathSegments[paramIndex];
       values[paramName] = paramValue;
     }
@@ -51,15 +57,18 @@ class Routes {
   }
 
   add(path, handler) {
-    let index = this.routes.push(new Route(path, handler));
-    this.routeMap[path] = index - 1; // Array length after adding - 1
+    let route = new Route(path, handler);
+    let index = this.routes.push(route);
+
+    let routeWildcard = route._pathWildcard;
+    this.routeMap[routeWildcard] = index - 1; // Array length after adding - 1
   }
 
   // Generic matching: simple equality checking first, then possible paramatric matches
   match(path) {
-    let simpleRoute = this.simpleMatch(path);
-    if (simpleRoute !== null) {
-      return [simpleRoute, {}];
+    let simpleRouteMatch = this.simpleMatch(path);
+    if (simpleRouteMatch !== null) {
+      return [simpleRouteMatch, {}];
     } else {
       return this.matchWithParams(path);
     }
@@ -75,23 +84,39 @@ class Routes {
   }
 
   matchWithParams(path) {
-    // "/1/2/3" -> split("/") -> ["", "1", "2", "3"] -> splice(1) -> ["1", "2", "3"]
-    let pathSegments = path.split("/").splice(1); // trimming first empty param
-    let urlWildcard = "";
+    const pathSegments = path.split("/").splice(1); // trimming first empty param
 
-    for (let [segmentIndex, pathSegment] of pathSegments.entries()) {
-      // if 
+    let params = {};
+    let queryParams = {};
+
+    console.log(pathSegments);
+    console.log("Matching with:");
+
+    // Filtering only route with the same segment count
+    for (let route of this.routes.filter(
+      (route) => route.getPathWildcardSegments().length === pathSegments.length,
+    )) {
+      let isMatched = true;
+      for (let [segmentIndex, pathSegment] of pathSegments.entries()) {
+        const paramName = route.getParamName(segmentIndex);
+        console.log("    ps:", segmentIndex, pathSegment, paramName);
+
+        if (paramName !== undefined) {
+          console.log("param");
+          params[paramName] = pathSegment;
+        } else {
+          if (route.getPathWildcardSegments()[segmentIndex] !== pathSegments[segmentIndex]) {
+            isMatched = false;
+            break;
+          } else {
+            console.log("Route doesn't match:", route.getPathWildcardSegments()[segmentIndex], pathSegments[segmentIndex]);
+          }
+        }
+      }
+      console.log("Matched:", isMatched, params, queryParams);
     }
 
-    if (path === "/users/123/books/456") {
-      let index = 2;
-      let route = this.routes[index];
-      let values = route.getParamsValues(path);
-
-      return [route, values];
-    } else {
-      return [null, {}];
-    }
+    return [null, params, queryParams];
   }
 }
 
@@ -107,7 +132,19 @@ class ExpressApp {
   }
 
   get(path, handler) {
-    this.routes.add(path, handler);
+    this.routes.add("GET", path, handler);
+  }
+
+  post(path, handler) {
+    this.routes.add("POST", path, handler);
+  }
+
+  put(path, handler) {
+    this.routes.add("PUT", path, handler);
+  }
+
+  delete(path, handler) {
+    this.routes.add("DELETE", path, handler);
   }
 }
 
