@@ -7,11 +7,13 @@ class Server {
   }
 
   _tcpDataHandler(tcpData) {
-    console.log(`TCP dataHandler: ${tcpData}\r\n`);
+    let requestData = tcpData;
+    console.log(`TCP dataHandler: requestData\r\n`);
 
     console.log(this._dataHandler("from handler"));
 
-    return [200, "OK", [["Content-type", "application/json"]], "{ \"ok\": true }"];
+    return [200, "OK", [["Content-type", "application/json"]], requestData];
+    // return [200, "OK", [["Content-type", "application/json"]], "{ \"ok\": true }"];
   }
 
   async listen(port, host, ready) {
