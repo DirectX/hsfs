@@ -7,13 +7,15 @@ class Server {
   }
 
   _tcpDataHandler(tcpData) {
-    let requestData = tcpData;
-    console.log(`TCP dataHandler: requestData\r\n`);
+    console.log(`TCP dataHandler: tcpData\r\n`);
+    console.log(this._dataHandler(tcpData));
 
-    console.log(this._dataHandler("from handler"));
+    let code = 200;
+    let status = "OK";
+    let headers = [["Content-type", "application/json"]];
+    let responseData = "{\"ok\": true, \"msg\": \"test response\"}";
 
-    return [200, "OK", [["Content-type", "application/json"]], requestData];
-    // return [200, "OK", [["Content-type", "application/json"]], "{ \"ok\": true }"];
+    return [status, code, headers, responseData];
   }
 
   async listen(port, host, ready) {

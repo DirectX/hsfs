@@ -57,43 +57,56 @@ class Routes {
 
   add(path, handler) {
     let route = new Route(path, handler);
-    let index = this.routes.push(route);
+    this.routes.push(route);
   }
 
   match(path) {
-    const pathSegments = path.split("/").splice(1); // trimming first empty param
+    const [urlPath, queryString] = path.split("?");
 
+    let matchedRoute = null;
     let params = {};
     let queryParams = {};
 
-    console.log(pathSegments);
-    console.log("Matching with:");
+    if (queryString && queryString.length > 2) {
+      for (let paramString of queryString.split("&")) {
+        if (paramString) {
+          let [paramName, paramValue] = paramString.split("=");
+          queryParams[paramName] = paramValue;
+        }
+      }
+    }
+
+    const pathSegments = urlPath.split("/").splice(1); // trimming first empty param
+
+    console.log("-----------------------------------------");
+    console.log(path, "->", pathSegments);
+    console.log(urlPath, queryString);
 
     // Filtering only route with the same segment count
     for (let route of this.routes.filter(
       (route) => route.getPathWildcardSegments().length === pathSegments.length,
     )) {
       let isMatched = true;
+
       for (let [segmentIndex, pathSegment] of pathSegments.entries()) {
         const paramName = route.getParamName(segmentIndex);
-        console.log("    ps:", segmentIndex, pathSegment, paramName);
-
         if (paramName !== undefined) {
-          console.log("param");
           params[paramName] = pathSegment;
         } else {
           if (route.getPathWildcardSegments()[segmentIndex] !== pathSegments[segmentIndex]) {
             isMatched = false;
             break;
-          } else {
-            console.log("Route doesn't match:", route.getPathWildcardSegments()[segmentIndex], pathSegments[segmentIndex]);
           }
         }
       }
-      console.log("Matched:", isMatched, params, queryParams);
+  
+      if (isMatched) {
+        matchedRoute = route;
+        return [matchedRoute, params, queryParams];
+      }
     }
 
-    return [null, params, queryParams];
+    return [matchedRoute, params, queryParams];
   }
 }
 
