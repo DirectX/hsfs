@@ -7,20 +7,31 @@ class Server {
   }
 
   _tcpDataHandler(tcpData) {
-    console.log(`TCP dataHandler: tcpData\r\n`);
-    console.log(this._dataHandler(tcpData));
+    console.log("HTTP server received TCP data:", tcpData);
 
-    let code = 200;
-    let status = "OK";
-    let headers = [["Content-type", "application/json"]];
-    let responseData = "{\"ok\": true, \"msg\": \"test response\"}";
+    // Top-level handler
+    const response = this._dataHandler(tcpData);
 
-    return [status, code, headers, responseData];
+    // For now simple HTTP-response.
+    const status = "OK";
+    const code = 200;
+    const headers = [["Content-Type", "application/json"]];
+
+    const responseData = JSON.stringify({
+      ok: true,
+      msg: "test response",
+    });
+
+    return [code, status, headers, responseData];
   }
 
-  async listen(port, host, ready) {
+  listen(port, host = "localhost", ready) {
     console.log("Starting HTTP server...");
-    await this.tcpServer.listen(port, host, ready);
+    return this.tcpServer.listen(port, host, ready);
+  }
+
+  close() {
+    return this.tcpServer.close();
   }
 }
 

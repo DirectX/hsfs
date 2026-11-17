@@ -28,6 +28,10 @@ class Route {
     // self._pathWildcardSegments = ["user", "*", "book", "*"]
   }
 
+  getMethod() {
+    return this._method;
+  }
+
   getPathWildcardSegments() {
     return this._pathWildcardSegments;
   }
@@ -55,26 +59,20 @@ class Routes {
     this.routes = [];
   }
 
-  add(path, handler) {
-    let route = new Route(path, handler);
+  add(method, path, handler) {
+    let route = new Route(method, path, handler);
     this.routes.push(route);
   }
 
-  match(path) {
+  match(methos, path) {
     const [urlPath, queryString] = path.split("?");
 
     let matchedRoute = null;
     let params = {};
-    let queryParams = {};
-
-    if (queryString && queryString.length > 2) {
-      for (let paramString of queryString.split("&")) {
-        if (paramString) {
-          let [paramName, paramValue] = paramString.split("=");
-          queryParams[paramName] = paramValue;
-        }
-      }
-    }
+    
+    const queryParams = Object.fromEntries(
+      new URLSearchParams(queryString)
+    );
 
     const pathSegments = urlPath.split("/").splice(1); // trimming first empty param
 
@@ -84,7 +82,9 @@ class Routes {
 
     // Filtering only route with the same segment count
     for (let route of this.routes.filter(
-      (route) => route.getPathWildcardSegments().length === pathSegments.length,
+      (route) =>
+        route.getPathWildcardSegments().length === pathSegments.length &&
+        route.getMethod() === method,
     )) {
       let isMatched = true;
 
@@ -93,13 +93,16 @@ class Routes {
         if (paramName !== undefined) {
           params[paramName] = pathSegment;
         } else {
-          if (route.getPathWildcardSegments()[segmentIndex] !== pathSegments[segmentIndex]) {
+          if (
+            route.getPathWildcardSegments()[segmentIndex] !==
+            pathSegments[segmentIndex]
+          ) {
             isMatched = false;
             break;
           }
         }
       }
-  
+
       if (isMatched) {
         matchedRoute = route;
         return [matchedRoute, params, queryParams];
@@ -116,14 +119,30 @@ class ExpressApp {
     this.routes = new Routes();
   }
 
+  listen(port, host = "localhost", ready) {
+    console.log("Starting Express app...");
+    this.httpServer.listen(port, host, ready);
+
+    return this;
+  }
+
+  close(callback) {
+    return new Promise((resolve, reject) => {
+      this.httpServer.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        console.log("Express app stopped");
+        resolve();
+      });
+    });
+  }
+
   _httpDataHandler(httpData) {
     console.log(">>> express request:", httpData);
     return "<<< express response: " + httpData;
-  }
-
-  async listen(port, host = "localhost", ready) {
-    console.log("Starting Express app...");
-    await this.httpServer.listen(port, host, ready);
   }
 
   get(path, handler) {
